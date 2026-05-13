@@ -737,7 +737,7 @@ input, textarea { font-family: inherit; }
 }
 
 .placeholder-code {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.06);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 1.5rem;
@@ -1883,10 +1883,52 @@ input, textarea { font-family: inherit; }
   .about-grid,
   .contact-grid {
     grid-template-columns: 1fr;
+    gap: 2rem;
   }
 
   .about-image-wrapper {
     order: -1;
+  }
+
+  .about-image-placeholder {
+    padding: 1.5rem;
+    min-height: 280px;
+  }
+
+  .about-content h3 {
+    font-size: 1.4rem;
+  }
+
+  .placeholder-code {
+    padding: 1rem;
+    max-width: 300px;
+  }
+
+  .placeholder-code pre {
+    font-size: 0.72rem;
+  }
+
+  .floating-badge {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.72rem;
+  }
+
+  .badge-1 {
+    top: 1rem;
+    right: -0.5rem;
+  }
+
+  .badge-2 {
+    bottom: 2rem;
+    left: -0.5rem;
+  }
+
+  .about-features {
+    gap: 1rem;
+  }
+
+  .about-feature p {
+    font-size: 0.85rem;
   }
 
   .services-grid {
@@ -2002,6 +2044,63 @@ input, textarea { font-family: inherit; }
   .hero-actions .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .about-grid {
+    gap: 1.5rem;
+  }
+
+  .about-image-placeholder {
+    padding: 1rem;
+    min-height: 220px;
+  }
+
+  .about-content h3 {
+    font-size: 1.2rem;
+  }
+
+  .about-content > p {
+    font-size: 0.9rem;
+  }
+
+  .placeholder-code {
+    max-width: 260px;
+    padding: 0.8rem;
+  }
+
+  .placeholder-code pre {
+    font-size: 0.65rem;
+  }
+
+  .floating-badge {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.68rem;
+  }
+
+  .badge-1 {
+    top: 0.75rem;
+    right: -0.3rem;
+  }
+
+  .badge-2 {
+    bottom: 1.5rem;
+    left: -0.3rem;
+  }
+
+  .about-features {
+    gap: 0.75rem;
+  }
+
+  .about-feature {
+    gap: 0.75rem;
+  }
+
+  .about-feature h4 {
+    font-size: 0.9rem;
+  }
+
+  .about-feature p {
+    font-size: 0.8rem;
   }
 }
 
