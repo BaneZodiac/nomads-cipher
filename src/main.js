@@ -1,9 +1,43 @@
-import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import './style.css';
 
 gsap.registerPlugin(ScrollTrigger);
+
+// ============================================
+// DARK/LIGHT MODE
+// ============================================
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = themeToggle?.querySelector('.theme-icon');
+
+function getPreferredTheme() {
+  const saved = localStorage.getItem('nomads-theme');
+  if (saved) return saved;
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('nomads-theme', theme);
+  if (themeIcon) {
+    themeIcon.textContent = theme === 'dark' ? '🌙' : '☀️';
+  }
+}
+
+const currentTheme = getPreferredTheme();
+setTheme(currentTheme);
+
+themeToggle?.addEventListener('click', () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  setTheme(next);
+});
+
+// Listen for system preference changes
+window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
+  if (!localStorage.getItem('nomads-theme')) {
+    setTheme(e.matches ? 'light' : 'dark');
+  }
+});
 
 // ============================================
 // LOADER
@@ -39,100 +73,103 @@ if (window.innerWidth > 768) {
 }
 
 // ============================================
-// THREE.JS — 3D PARTICLE BACKGROUND
+// THREE.JS — 3D PARTICLE BACKGROUND (lazy loaded)
 // ============================================
-const canvas = document.getElementById('heroCanvas');
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({
-  canvas,
-  alpha: true,
-  antialias: true,
-});
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+async function initHeroParticles() {
+  const THREE = await import('three');
+  
+  const canvas = document.getElementById('heroCanvas');
+  if (!canvas) return;
+  
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: true,
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-// Create particles
-const particlesGeometry = new THREE.BufferGeometry();
-const particlesCount = 2000;
-const posArray = new Float32Array(particlesCount * 3);
-const colorsArray = new Float32Array(particlesCount * 3);
+  // Create particles
+  const particlesGeometry = new THREE.BufferGeometry();
+  const particlesCount = 2000;
+  const posArray = new Float32Array(particlesCount * 3);
+  const colorsArray = new Float32Array(particlesCount * 3);
 
-const color1 = new THREE.Color('#6c5ce7');
-const color2 = new THREE.Color('#a29bfe');
-const color3 = new THREE.Color('#00cec9');
+  const color1 = new THREE.Color('#6c5ce7');
+  const color2 = new THREE.Color('#a29bfe');
+  const color3 = new THREE.Color('#00cec9');
 
-for (let i = 0; i < particlesCount * 3; i += 3) {
-  // Distribute in a sphere
-  const radius = 8 + Math.random() * 4;
-  const theta = Math.random() * Math.PI * 2;
-  const phi = Math.acos(2 * Math.random() - 1);
+  for (let i = 0; i < particlesCount * 3; i += 3) {
+    const radius = 8 + Math.random() * 4;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
 
-  posArray[i] = radius * Math.sin(phi) * Math.cos(theta);
-  posArray[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
-  posArray[i + 2] = radius * Math.cos(phi);
+    posArray[i] = radius * Math.sin(phi) * Math.cos(theta);
+    posArray[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
+    posArray[i + 2] = radius * Math.cos(phi);
 
-  // Random colors
-  const choice = Math.random();
-  let col;
-  if (choice < 0.4) col = color1;
-  else if (choice < 0.7) col = color2;
-  else col = color3;
+    const choice = Math.random();
+    let col;
+    if (choice < 0.4) col = color1;
+    else if (choice < 0.7) col = color2;
+    else col = color3;
 
-  colorsArray[i] = col.r;
-  colorsArray[i + 1] = col.g;
-  colorsArray[i + 2] = col.b;
-}
+    colorsArray[i] = col.r;
+    colorsArray[i + 1] = col.g;
+    colorsArray[i + 2] = col.b;
+  }
 
-particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
+  particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+  particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
 
-const particlesMaterial = new THREE.PointsMaterial({
-  size: 0.04,
-  vertexColors: true,
-  transparent: true,
-  opacity: 0.8,
-  blending: THREE.AdditiveBlending,
-  sizeAttenuation: true,
-});
+  const particlesMaterial = new THREE.PointsMaterial({
+    size: 0.04,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.8,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true,
+  });
 
-const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-scene.add(particlesMesh);
+  const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+  scene.add(particlesMesh);
 
-// Connection lines
-const lineGeometry = new THREE.BufferGeometry();
-const linePositions = [];
-const lineColors = [];
+  // Connection lines
+  const lineGeometry = new THREE.BufferGeometry();
+  const linePositions = [];
+  const lineColors = [];
 
-for (let i = 0; i < Math.min(400, posArray.length / 3); i += 2) {
-  const idx1 = i * 3;
-  const idx2 = (i + 1) * 3;
-  if (idx2 >= posArray.length) break;
+  for (let i = 0; i < Math.min(400, posArray.length / 3); i += 2) {
+    const idx1 = i * 3;
+    const idx2 = (i + 1) * 3;
+    if (idx2 >= posArray.length) break;
 
-  linePositions.push(posArray[idx1], posArray[idx1 + 1], posArray[idx1 + 2]);
-  linePositions.push(posArray[idx2], posArray[idx2 + 1], posArray[idx2 + 2]);
+    linePositions.push(posArray[idx1], posArray[idx1 + 1], posArray[idx1 + 2]);
+    linePositions.push(posArray[idx2], posArray[idx2 + 1], posArray[idx2 + 2]);
 
-  const c1 = new THREE.Color(colorsArray[idx1], colorsArray[idx1 + 1], colorsArray[idx1 + 2]);
-  const c2 = new THREE.Color(colorsArray[idx2], colorsArray[idx2 + 1], colorsArray[idx2 + 2]);
-  lineColors.push(c1.r, c1.g, c1.b, c2.r, c2.g, c2.b);
-}
+    const c1 = new THREE.Color(colorsArray[idx1], colorsArray[idx1 + 1], colorsArray[idx1 + 2]);
+    const c2 = new THREE.Color(colorsArray[idx2], colorsArray[idx2 + 1], colorsArray[idx2 + 2]);
+    lineColors.push(c1.r, c1.g, c1.b, c2.r, c2.g, c2.b);
+  }
 
-lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
-lineGeometry.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
+  lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+  lineGeometry.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
 
-const lineMaterial = new THREE.LineBasicMaterial({
-  vertexColors: true,
-  transparent: true,
-  opacity: 0.15,
-});
+  const lineMaterial = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.15,
+  });
 
-const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
-scene.add(lines);
+  const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+  scene.add(lines);
 
-camera.position.z = 10;
+  camera.position.z = 10;
 
-// Mouse interaction for particles
-let mouseX = 0;
+  // Mouse interaction for particles
+  let mouseX = 0;
 let mouseY = 0;
 
 document.addEventListener('mousemove', (event) => {
@@ -158,14 +195,13 @@ function animateParticles() {
   renderer.render(scene, camera);
 }
 
-animateParticles();
-
-// Resize handler
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+animateParticles();  // Resize handler
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
 
 // ============================================
 // NAVBAR SCROLL EFFECT
@@ -733,11 +769,13 @@ function openModal(key) {
     ${data.body}
   `;
   modalOverlay.classList.add('active');
+  document.body.classList.add('cursor-hidden');
   document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
   modalOverlay.classList.remove('active');
+  document.body.classList.remove('cursor-hidden');
   document.body.style.overflow = '';
 }
 
@@ -796,3 +834,8 @@ document.querySelectorAll('.footer-col a, .footer-bottom-links a').forEach((link
 // ============================================
 console.log('%c Nomads Cipher ', 'background: linear-gradient(135deg, #6c5ce7, #00cec9); color: white; font-size: 1.5rem; font-weight: bold; padding: 0.5rem 1rem; border-radius: 4px;');
 console.log('%c Engineered with precision. Built for impact. ', 'color: #a29bfe; font-size: 0.9rem;');
+
+// Lazy initialize Three.js particle background
+document.addEventListener('DOMContentLoaded', () => {
+  initHeroParticles();
+});
