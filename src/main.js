@@ -73,9 +73,15 @@ if (window.innerWidth > 768) {
 }
 
 // ============================================
-// THREE.JS — 3D PARTICLE BACKGROUND (lazy loaded)
+// THREE.JS — 3D PARTICLE BACKGROUND (LAZY LOADED)
 // ============================================
-async function initHeroParticles() {
+let threeLoaded = false;
+let threeSceneRefs = null;
+
+async function loadThreeScene() {
+  if (threeLoaded) return;
+  threeLoaded = true;
+  
   const THREE = await import('three');
   
   const canvas = document.getElementById('heroCanvas');
@@ -168,40 +174,52 @@ async function initHeroParticles() {
 
   camera.position.z = 10;
 
-  // Mouse interaction for particles
   let mouseX = 0;
-let mouseY = 0;
+  let mouseY = 0;
 
-document.addEventListener('mousemove', (event) => {
-  mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-  mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-});
+  document.addEventListener('mousemove', (event) => {
+    mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+    mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+  });
 
-// Animation
-function animateParticles() {
-  requestAnimationFrame(animateParticles);
+  function animateParticles() {
+    requestAnimationFrame(animateParticles);
 
-  particlesMesh.rotation.y += 0.0005;
-  particlesMesh.rotation.x += 0.0003;
-  lines.rotation.y += 0.0005;
-  lines.rotation.x += 0.0003;
+    particlesMesh.rotation.y += 0.0005;
+    particlesMesh.rotation.x += 0.0003;
+    lines.rotation.y += 0.0005;
+    lines.rotation.x += 0.0003;
 
-  // Follow mouse
-  particlesMesh.rotation.y += mouseX * 0.0003;
-  particlesMesh.rotation.x += mouseY * 0.0003;
-  lines.rotation.y += mouseX * 0.0003;
-  lines.rotation.x += mouseY * 0.0003;
+    particlesMesh.rotation.y += mouseX * 0.0003;
+    particlesMesh.rotation.x += mouseY * 0.0003;
+    lines.rotation.y += mouseX * 0.0003;
+    lines.rotation.x += mouseY * 0.0003;
 
-  renderer.render(scene, camera);
-}
+    renderer.render(scene, camera);
+  }
 
-animateParticles();  // Resize handler
+  animateParticles();
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
+  
+  threeSceneRefs = { scene, camera, renderer };
 }
+
+// Load Three.js lazily when hero section is near viewport
+const heroObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      loadThreeScene();
+      heroObserver.unobserve(entry.target);
+    }
+  });
+}, { rootMargin: '200px' });
+
+const heroCanvas = document.getElementById('heroCanvas');
+if (heroCanvas) heroObserver.observe(heroCanvas);
 
 // ============================================
 // NAVBAR SCROLL EFFECT
@@ -360,6 +378,70 @@ heroTimeline
   .from('.hero-stats', { y: 30, opacity: 0, duration: 0.8, ease: 'power3.out' }, '-=0.3')
   .from('.scroll-indicator', { opacity: 0, duration: 0.6, ease: 'power2.out' }, '-=0.2');
 
+// ============================================
+// PAGE TRANSITIONS — Scroll Reveal with Stagger
+// ============================================
+
+// Service cards staggered entrance
+ScrollTrigger.create({
+  trigger: '.services-grid',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.fromTo('.service-card',
+      { y: 50, opacity: 0, scale: 0.95 },
+      { 
+        y: 0, 
+        opacity: 1, 
+        scale: 1,
+        duration: 0.5,
+        stagger: 0.08,
+        ease: 'power2.out',
+        clearProps: 'transform'
+      }
+    );
+  }
+});
+
+// Work cards staggered entrance
+ScrollTrigger.create({
+  trigger: '.work-grid',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.fromTo('.work-card',
+      { y: 40, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.5, stagger: 0.07, ease: 'power2.out' }
+    );
+  }
+});
+
+// Testimonials section entrance
+ScrollTrigger.create({
+  trigger: '.testimonials-carousel',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.fromTo('.testimonials-carousel',
+      { y: 30, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }
+    );
+  }
+});
+
+// Contact form entrance
+ScrollTrigger.create({
+  trigger: '#contactForm',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.fromTo('#contactForm',
+      { y: 30, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }
+    );
+  }
+});
+
 // Counter animation
 function animateCounters() {
   const counters = document.querySelectorAll('.hero-stat-number, .stat-number');
@@ -480,10 +562,11 @@ for (let i = 0; i < totalSlides; i++) {
 const dots = dotsContainer.querySelectorAll('.testimonial-dot');
 
 function goToSlide(index) {
-  currentIndex = index;  const cardWidth = cards[0].offsetWidth;
-  const gap = 24; // 1.5rem in pixels
+  currentIndex = index;
+  const cardWidth = cards[0].offsetWidth;
+  const gap = 16;
   const offset = -index * (cardWidth + gap);
-track.style.transform = `translateX(${offset}px)`;
+  track.style.transform = `translateX(${offset}px)`;
 
   dots.forEach((dot, i) => {
     dot.classList.toggle('active', i === index);
@@ -768,15 +851,33 @@ function openModal(key) {
     <h2>${data.title}</h2>
     ${data.body}
   `;
-  modalOverlay.classList.add('active');
+  
+  // Hide custom cursor when modal is open
   document.body.classList.add('cursor-hidden');
+  
+  // GSAP modal transition
+  modalOverlay.classList.add('active');
+  gsap.fromTo(modalContainer,
+    { scale: 0.85, opacity: 0, y: 30 },
+    { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: 'back.out(1.7)' }
+  );
   document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
-  modalOverlay.classList.remove('active');
-  document.body.classList.remove('cursor-hidden');
-  document.body.style.overflow = '';
+  gsap.to(modalContainer, {
+    scale: 0.9,
+    opacity: 0,
+    y: 20,
+    duration: 0.25,
+    ease: 'power2.in',
+    onComplete: () => {
+      modalOverlay.classList.remove('active');
+      document.body.style.overflow = '';
+      // Restore custom cursor
+      document.body.classList.remove('cursor-hidden');
+    }
+  });
 }
 
 modalClose.addEventListener('click', closeModal);
@@ -789,6 +890,29 @@ document.addEventListener('keydown', (e) => {
     closeModal();
   }
 });
+
+// Modal content page transitions
+function modalNavigate(key) {
+  const data = modalData[key];
+  if (!data) return;
+  
+  gsap.to(modalContent, {
+    opacity: 0,
+    y: -10,
+    duration: 0.15,
+    ease: 'power2.in',
+    onComplete: () => {
+      modalContent.innerHTML = `
+        <h2>${data.title}</h2>
+        ${data.body}
+      `;
+      gsap.fromTo(modalContent,
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' }
+      );
+    }
+  });
+}
 
 // Hook up footer links
 const footerLinkMap = {
@@ -836,6 +960,4 @@ console.log('%c Nomads Cipher ', 'background: linear-gradient(135deg, #6c5ce7, #
 console.log('%c Engineered with precision. Built for impact. ', 'color: #a29bfe; font-size: 0.9rem;');
 
 // Lazy initialize Three.js particle background
-document.addEventListener('DOMContentLoaded', () => {
-  initHeroParticles();
-});
+

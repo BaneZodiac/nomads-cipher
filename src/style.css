@@ -13,6 +13,19 @@
   --color-text: #ffffff;
   --color-text-secondary: rgba(255, 255, 255, 0.7);
   --color-text-muted: rgba(255, 255, 255, 0.4);
+}
+
+/* Light Theme */
+[data-theme="light"] {
+  --color-bg: #f8f9fa;
+  --color-bg-alt: #ffffff;
+  --color-bg-card: rgba(0, 0, 0, 0.02);
+  --color-surface: rgba(0, 0, 0, 0.04);
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-hover: rgba(0, 0, 0, 0.15);
+  --color-text: #1a1a2e;
+  --color-text-secondary: rgba(0, 0, 0, 0.65);
+  --color-text-muted: rgba(0, 0, 0, 0.4);
   --color-accent-1: #6c5ce7;
   --color-accent-2: #a29bfe;
   --color-accent-3: #00cec9;
@@ -89,7 +102,7 @@ input, textarea { font-family: inherit; }
   pointer-events: none;
   z-index: 99999;
   mix-blend-mode: difference;
-  transition: transform 0.1s ease;
+  transition: transform 0.1s ease, opacity 0.3s ease;
 }
 
 .cursor-follower {
@@ -100,7 +113,24 @@ input, textarea { font-family: inherit; }
   border-radius: 50%;
   pointer-events: none;
   z-index: 99998;
-  transition: transform 0.15s ease, width 0.3s ease, height 0.3s ease, background 0.3s ease;
+  transition: transform 0.15s ease, opacity 0.3s ease;
+}
+
+.cursor-hidden .cursor,
+.cursor-hidden .cursor-follower {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.cursor-follower {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--color-accent-2);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99998;
+  transition: transform 0.15s ease, opacity 0.3s ease, width 0.3s ease, height 0.3s ease, background 0.3s ease;
   mix-blend-mode: difference;
 }
 
@@ -1162,12 +1192,16 @@ input, textarea { font-family: inherit; }
 }
 
 .testimonial-card {
-  min-width: 100%;
+  min-width: calc(100% - 1rem);
+  margin: 0 0.5rem;
   padding: 3rem;
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   transition: all var(--transition);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .testimonial-card:hover {
@@ -1788,6 +1822,41 @@ input, textarea { font-family: inherit; }
   color: var(--color-accent-1);
   padding-left: 4px;
 }
+
+/* ========== THEME TOGGLE ========== */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-toggle:hover {
+  border-color: var(--color-accent-1);
+  background: var(--color-bg-card);
+  color: var(--color-accent-1);
+  transform: rotate(15deg);
+}
+
+.theme-icon {
+  transition: transform 0.3s ease;
+  line-height: 1;
+}
+
+.theme-toggle:hover .theme-icon {
+  transform: scale(1.2);
+}
+
 
 /* Responsive */
 @media (max-width: 1024px) {
