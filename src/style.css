@@ -1934,6 +1934,10 @@ input, textarea { font-family: inherit; }
 }
 
 @media (max-width: 480px) {
+  body {
+    overflow-x: hidden;
+  }
+
   .nav-container {
     padding: 0 1rem;
   }
