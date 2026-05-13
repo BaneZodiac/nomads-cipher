@@ -1,9 +1,43 @@
-import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import './style.css';
 
 gsap.registerPlugin(ScrollTrigger);
+
+// ============================================
+// DARK/LIGHT MODE
+// ============================================
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = themeToggle?.querySelector('.theme-icon');
+
+function getPreferredTheme() {
+  const saved = localStorage.getItem('nomads-theme');
+  if (saved) return saved;
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('nomads-theme', theme);
+  if (themeIcon) {
+    themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+}
+
+const currentTheme = getPreferredTheme();
+setTheme(currentTheme);
+
+themeToggle?.addEventListener('click', () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  setTheme(next);
+});
+
+// Listen for system preference changes
+window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
+  if (!localStorage.getItem('nomads-theme')) {
+    setTheme(e.matches ? 'light' : 'dark');
+  }
+});
 
 // ============================================
 // LOADER
@@ -39,133 +73,154 @@ if (window.innerWidth > 768) {
 }
 
 // ============================================
-// THREE.JS — 3D PARTICLE BACKGROUND
+// THREE.JS — 3D PARTICLE BACKGROUND (LAZY LOADED)
 // ============================================
-const canvas = document.getElementById('heroCanvas');
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({
-  canvas,
-  alpha: true,
-  antialias: true,
-});
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+let threeLoaded = false;
+let threeSceneRefs = null;
 
-// Create particles
-const particlesGeometry = new THREE.BufferGeometry();
-const particlesCount = 2000;
-const posArray = new Float32Array(particlesCount * 3);
-const colorsArray = new Float32Array(particlesCount * 3);
-
-const color1 = new THREE.Color('#6c5ce7');
-const color2 = new THREE.Color('#a29bfe');
-const color3 = new THREE.Color('#00cec9');
-
-for (let i = 0; i < particlesCount * 3; i += 3) {
-  // Distribute in a sphere
-  const radius = 8 + Math.random() * 4;
-  const theta = Math.random() * Math.PI * 2;
-  const phi = Math.acos(2 * Math.random() - 1);
-
-  posArray[i] = radius * Math.sin(phi) * Math.cos(theta);
-  posArray[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
-  posArray[i + 2] = radius * Math.cos(phi);
-
-  // Random colors
-  const choice = Math.random();
-  let col;
-  if (choice < 0.4) col = color1;
-  else if (choice < 0.7) col = color2;
-  else col = color3;
-
-  colorsArray[i] = col.r;
-  colorsArray[i + 1] = col.g;
-  colorsArray[i + 2] = col.b;
-}
-
-particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
-
-const particlesMaterial = new THREE.PointsMaterial({
-  size: 0.04,
-  vertexColors: true,
-  transparent: true,
-  opacity: 0.8,
-  blending: THREE.AdditiveBlending,
-  sizeAttenuation: true,
-});
-
-const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-scene.add(particlesMesh);
-
-// Connection lines
-const lineGeometry = new THREE.BufferGeometry();
-const linePositions = [];
-const lineColors = [];
-
-for (let i = 0; i < Math.min(400, posArray.length / 3); i += 2) {
-  const idx1 = i * 3;
-  const idx2 = (i + 1) * 3;
-  if (idx2 >= posArray.length) break;
-
-  linePositions.push(posArray[idx1], posArray[idx1 + 1], posArray[idx1 + 2]);
-  linePositions.push(posArray[idx2], posArray[idx2 + 1], posArray[idx2 + 2]);
-
-  const c1 = new THREE.Color(colorsArray[idx1], colorsArray[idx1 + 1], colorsArray[idx1 + 2]);
-  const c2 = new THREE.Color(colorsArray[idx2], colorsArray[idx2 + 1], colorsArray[idx2 + 2]);
-  lineColors.push(c1.r, c1.g, c1.b, c2.r, c2.g, c2.b);
-}
-
-lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
-lineGeometry.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
-
-const lineMaterial = new THREE.LineBasicMaterial({
-  vertexColors: true,
-  transparent: true,
-  opacity: 0.15,
-});
-
-const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
-scene.add(lines);
-
-camera.position.z = 10;
-
-// Mouse interaction for particles
-let mouseX = 0;
-let mouseY = 0;
-
-document.addEventListener('mousemove', (event) => {
-  mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-  mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-});
-
-// Animation
-function animateParticles() {
-  requestAnimationFrame(animateParticles);
-
-  particlesMesh.rotation.y += 0.0005;
-  particlesMesh.rotation.x += 0.0003;
-  lines.rotation.y += 0.0005;
-  lines.rotation.x += 0.0003;
-
-  // Follow mouse
-  particlesMesh.rotation.y += mouseX * 0.0003;
-  particlesMesh.rotation.x += mouseY * 0.0003;
-  lines.rotation.y += mouseX * 0.0003;
-  lines.rotation.x += mouseY * 0.0003;
-
-  renderer.render(scene, camera);
-}
-
-animateParticles();
-
-// Resize handler
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+async function loadThreeScene() {
+  if (threeLoaded) return;
+  threeLoaded = true;
+  
+  const THREE = await import('three');
+  
+  const canvas = document.getElementById('heroCanvas');
+  if (!canvas) return;
+  
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: true,
+  });
   renderer.setSize(window.innerWidth, window.innerHeight);
-});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Create particles
+  const particlesGeometry = new THREE.BufferGeometry();
+  const particlesCount = 2000;
+  const posArray = new Float32Array(particlesCount * 3);
+  const colorsArray = new Float32Array(particlesCount * 3);
+
+  const color1 = new THREE.Color('#6c5ce7');
+  const color2 = new THREE.Color('#a29bfe');
+  const color3 = new THREE.Color('#00cec9');
+
+  for (let i = 0; i < particlesCount * 3; i += 3) {
+    const radius = 8 + Math.random() * 4;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+
+    posArray[i] = radius * Math.sin(phi) * Math.cos(theta);
+    posArray[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
+    posArray[i + 2] = radius * Math.cos(phi);
+
+    const choice = Math.random();
+    let col;
+    if (choice < 0.4) col = color1;
+    else if (choice < 0.7) col = color2;
+    else col = color3;
+
+    colorsArray[i] = col.r;
+    colorsArray[i + 1] = col.g;
+    colorsArray[i + 2] = col.b;
+  }
+
+  particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+  particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
+
+  const particlesMaterial = new THREE.PointsMaterial({
+    size: 0.04,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.8,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true,
+  });
+
+  const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+  scene.add(particlesMesh);
+
+  // Connection lines
+  const lineGeometry = new THREE.BufferGeometry();
+  const linePositions = [];
+  const lineColors = [];
+
+  for (let i = 0; i < Math.min(400, posArray.length / 3); i += 2) {
+    const idx1 = i * 3;
+    const idx2 = (i + 1) * 3;
+    if (idx2 >= posArray.length) break;
+
+    linePositions.push(posArray[idx1], posArray[idx1 + 1], posArray[idx1 + 2]);
+    linePositions.push(posArray[idx2], posArray[idx2 + 1], posArray[idx2 + 2]);
+
+    const c1 = new THREE.Color(colorsArray[idx1], colorsArray[idx1 + 1], colorsArray[idx1 + 2]);
+    const c2 = new THREE.Color(colorsArray[idx2], colorsArray[idx2 + 1], colorsArray[idx2 + 2]);
+    lineColors.push(c1.r, c1.g, c1.b, c2.r, c2.g, c2.b);
+  }
+
+  lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+  lineGeometry.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
+
+  const lineMaterial = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.15,
+  });
+
+  const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+  scene.add(lines);
+
+  camera.position.z = 10;
+
+  let mouseX = 0;
+  let mouseY = 0;
+
+  document.addEventListener('mousemove', (event) => {
+    mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+    mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+  });
+
+  function animateParticles() {
+    requestAnimationFrame(animateParticles);
+
+    particlesMesh.rotation.y += 0.0005;
+    particlesMesh.rotation.x += 0.0003;
+    lines.rotation.y += 0.0005;
+    lines.rotation.x += 0.0003;
+
+    particlesMesh.rotation.y += mouseX * 0.0003;
+    particlesMesh.rotation.x += mouseY * 0.0003;
+    lines.rotation.y += mouseX * 0.0003;
+    lines.rotation.x += mouseY * 0.0003;
+
+    renderer.render(scene, camera);
+  }
+
+  animateParticles();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+  
+  threeSceneRefs = { scene, camera, renderer };
+}
+
+// Load Three.js lazily when hero section is near viewport
+const heroObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      loadThreeScene();
+      heroObserver.unobserve(entry.target);
+    }
+  });
+}, { rootMargin: '200px' });
+
+const heroCanvas = document.getElementById('heroCanvas');
+if (heroCanvas) heroObserver.observe(heroCanvas);
 
 // ============================================
 // NAVBAR SCROLL EFFECT
@@ -324,6 +379,70 @@ heroTimeline
   .from('.hero-stats', { y: 30, opacity: 0, duration: 0.8, ease: 'power3.out' }, '-=0.3')
   .from('.scroll-indicator', { opacity: 0, duration: 0.6, ease: 'power2.out' }, '-=0.2');
 
+// ============================================
+// PAGE TRANSITIONS — Scroll Reveal with Stagger
+// ============================================
+
+// Service cards staggered entrance
+ScrollTrigger.create({
+  trigger: '.services-grid',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.fromTo('.service-card',
+      { y: 50, opacity: 0, scale: 0.95 },
+      { 
+        y: 0, 
+        opacity: 1, 
+        scale: 1,
+        duration: 0.5,
+        stagger: 0.08,
+        ease: 'power2.out',
+        clearProps: 'transform'
+      }
+    );
+  }
+});
+
+// Work cards staggered entrance
+ScrollTrigger.create({
+  trigger: '.work-grid',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.fromTo('.work-card',
+      { y: 40, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.5, stagger: 0.07, ease: 'power2.out' }
+    );
+  }
+});
+
+// Testimonials section entrance
+ScrollTrigger.create({
+  trigger: '.testimonials-carousel',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.fromTo('.testimonials-carousel',
+      { y: 30, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }
+    );
+  }
+});
+
+// Contact form entrance
+ScrollTrigger.create({
+  trigger: '#contactForm',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.fromTo('#contactForm',
+      { y: 30, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }
+    );
+  }
+});
+
 // Counter animation
 function animateCounters() {
   const counters = document.querySelectorAll('.hero-stat-number, .stat-number');
@@ -444,10 +563,11 @@ for (let i = 0; i < totalSlides; i++) {
 const dots = dotsContainer.querySelectorAll('.testimonial-dot');
 
 function goToSlide(index) {
-  currentIndex = index;  const cardWidth = cards[0].offsetWidth;
-  const gap = 24; // 1.5rem in pixels
+  currentIndex = index;
+  const cardWidth = cards[0].offsetWidth;
+  const gap = 16;
   const offset = -index * (cardWidth + gap);
-track.style.transform = `translateX(${offset}px)`;
+  track.style.transform = `translateX(${offset}px)`;
 
   dots.forEach((dot, i) => {
     dot.classList.toggle('active', i === index);
@@ -732,13 +852,34 @@ function openModal(key) {
     <h2>${data.title}</h2>
     ${data.body}
   `;
+  
+  // Hide custom cursor when modal is open
+  document.body.classList.add('cursor-hidden');
+  
+  // GSAP modal transition
   modalOverlay.classList.add('active');
+  gsap.fromTo(modalContainer,
+    { scale: 0.85, opacity: 0, y: 30 },
+    { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: 'back.out(1.7)' }
+  );
+  
   document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
-  modalOverlay.classList.remove('active');
-  document.body.style.overflow = '';
+  gsap.to(modalContainer, {
+    scale: 0.9,
+    opacity: 0,
+    y: 20,
+    duration: 0.25,
+    ease: 'power2.in',
+    onComplete: () => {
+      modalOverlay.classList.remove('active');
+      document.body.style.overflow = '';
+      // Restore custom cursor
+      document.body.classList.remove('cursor-hidden');
+    }
+  });
 }
 
 modalClose.addEventListener('click', closeModal);
@@ -751,6 +892,29 @@ document.addEventListener('keydown', (e) => {
     closeModal();
   }
 });
+
+// Modal content page transitions
+function modalNavigate(key) {
+  const data = modalData[key];
+  if (!data) return;
+  
+  gsap.to(modalContent, {
+    opacity: 0,
+    y: -10,
+    duration: 0.15,
+    ease: 'power2.in',
+    onComplete: () => {
+      modalContent.innerHTML = `
+        <h2>${data.title}</h2>
+        ${data.body}
+      `;
+      gsap.fromTo(modalContent,
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' }
+      );
+    }
+  });
+}
 
 // Hook up footer links
 const footerLinkMap = {
