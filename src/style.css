@@ -31,6 +31,14 @@
   --color-accent-3: #00cec9;
   --color-accent-4: #fd79a8;
   --gradient-primary: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 50%, #00cec9 100%);
+  --color-cursor: #ffffff;
+  --color-cursor-glow: rgba(108, 92, 231, 0.6);
+  --color-cursor-follower: rgba(255, 255, 255, 0.4);
+  --color-overlay: rgba(15, 15, 30, 0.85);
+  --color-overlay-heavy: rgba(15, 15, 30, 0.95);
+  --color-modal-bg: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.98));
+  --color-modal-border: rgba(255, 255, 255, 0.08);
+  --color-modal-scrollbar: rgba(255, 255, 255, 0.1);
 }
 
 /* Light Theme */
@@ -56,6 +64,14 @@
   --shadow-glow: 0 0 40px rgba(108, 92, 231, 0.15);
   --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3);
   --transition: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --color-cursor: #1a1a2e;
+  --color-cursor-glow: rgba(108, 92, 231, 0.4);
+  --color-cursor-follower: rgba(0, 0, 0, 0.3);
+  --color-overlay: rgba(255, 255, 255, 0.85);
+  --color-overlay-heavy: rgba(255, 255, 255, 0.95);
+  --color-modal-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 240, 250, 0.98));
+  --color-modal-border: rgba(0, 0, 0, 0.08);
+  --color-modal-scrollbar: rgba(0, 0, 0, 0.1);
 }
 
 /* Reset & Base */
@@ -69,6 +85,7 @@ html {
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: var(--color-accent-1) transparent;
+  overflow-x: hidden;
 }
 
 ::-webkit-scrollbar { width: 6px; }
@@ -97,11 +114,11 @@ input, textarea { font-family: inherit; }
   position: fixed;
   width: 12px;
   height: 12px;
-  background: var(--color-accent-1);
+  background: var(--color-cursor);
   border-radius: 50%;
   pointer-events: none;
   z-index: 99999;
-  mix-blend-mode: difference;
+  box-shadow: 0 0 10px var(--color-cursor-glow);
   transition: transform 0.1s ease, opacity 0.3s ease;
 }
 
@@ -109,7 +126,7 @@ input, textarea { font-family: inherit; }
   position: fixed;
   width: 40px;
   height: 40px;
-  border: 2px solid var(--color-accent-2);
+  border: 2px solid var(--color-cursor-follower);
   border-radius: 50%;
   pointer-events: none;
   z-index: 99998;
@@ -246,7 +263,7 @@ input, textarea { font-family: inherit; }
 }
 
 .navbar.scrolled {
-  background: rgba(10, 10, 15, 0.85);
+  background: var(--color-overlay);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--color-border);
@@ -804,7 +821,7 @@ input, textarea { font-family: inherit; }
   color: var(--color-text-secondary);
 }
 
-.code-comment { color: #6c7293; }
+.code-comment { color: #8a8fa8; }
 .code-keyword { color: #c792ea; }
 .code-variable { color: #82aaff; }
 .code-class { color: #ffcb6b; }
@@ -817,7 +834,7 @@ input, textarea { font-family: inherit; }
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 1rem;
-  background: rgba(10, 10, 15, 0.9);
+  background: var(--color-overlay);
   backdrop-filter: blur(20px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -1625,7 +1642,7 @@ input, textarea { font-family: inherit; }
   position: fixed;
   inset: 0;
   z-index: 99997;
-  background: rgba(10, 10, 15, 0.98);
+  background: var(--color-overlay-heavy);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   display: flex;
@@ -1704,8 +1721,8 @@ input, textarea { font-family: inherit; }
 }
 
 .modal-container {
-  background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(15, 15, 30, 0.98));
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-modal-bg);
+  border: 1px solid var(--color-modal-border);
   border-radius: 20px;
   max-width: 700px;
   width: 100%;
@@ -1716,7 +1733,7 @@ input, textarea { font-family: inherit; }
   transform: scale(0.9) translateY(20px);
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: var(--color-modal-scrollbar) transparent;
 }
 
 .modal-overlay.active .modal-container {
@@ -1728,7 +1745,7 @@ input, textarea { font-family: inherit; }
 }
 
 .modal-container::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
+  background: var(--color-modal-scrollbar);
   border-radius: 2px;
 }
 
@@ -1736,8 +1753,8 @@ input, textarea { font-family: inherit; }
   position: absolute;
   top: 1.25rem;
   right: 1.25rem;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-modal-border);
   color: var(--color-text);
   width: 40px;
   height: 40px;
@@ -1751,9 +1768,10 @@ input, textarea { font-family: inherit; }
 }
 
 .modal-close:hover {
-  background: rgba(255,255,255,0.1);
+  background: var(--color-surface);
   color: var(--color-accent-1);
   transform: rotate(90deg);
+  border-color: var(--color-accent-1);
 }
 
 .modal-content h2 {
@@ -1875,6 +1893,7 @@ input, textarea { font-family: inherit; }
 }
 
 @media (max-width: 768px) {
+  .services::before { display: none; }
   body {
     cursor: auto;
   }
