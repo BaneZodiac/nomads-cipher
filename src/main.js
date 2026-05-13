@@ -5,41 +5,6 @@ import './style.css';
 gsap.registerPlugin(ScrollTrigger);
 
 // ============================================
-// DARK/LIGHT MODE
-// ============================================
-const themeToggle = document.getElementById('themeToggle');
-const themeIcon = themeToggle?.querySelector('.theme-icon');
-
-function getPreferredTheme() {
-  const saved = localStorage.getItem('nomads-theme');
-  if (saved) return saved;
-  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-}
-
-function setTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('nomads-theme', theme);
-  if (themeIcon) {
-    themeIcon.textContent = theme === 'dark' ? '🌙' : '☀️';
-  }
-}
-
-const currentTheme = getPreferredTheme();
-setTheme(currentTheme);
-
-themeToggle?.addEventListener('click', () => {
-  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  setTheme(next);
-});
-
-// Listen for system preference changes
-window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
-  if (!localStorage.getItem('nomads-theme')) {
-    setTheme(e.matches ? 'light' : 'dark');
-  }
-});
-
-// ============================================
 // LOADER
 // ============================================
 const loader = document.getElementById('loader');
